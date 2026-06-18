@@ -12,8 +12,8 @@ const DB_FILE = path.join(__dirname, 'data', 'records.json');
 
 // 鐧惧害AI閰嶇疆
 const BAIDU_CONFIG = {
-  apiKey: 'E8lsno3wOTrCBzNNE44Eu4vH',
-  secretKey: '27tA3f3Dtwd4C2JAUkLTBxKho5WHOkbY'
+  apiKey: 'YOUR_BAIDU_API_KEY',
+  secretKey: 'YOUR_BAIDU_SECRET_KEY'
 };
 
 let cachedToken = null;
