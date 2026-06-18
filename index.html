@@ -1,0 +1,782 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI鍥剧墖璇嗗埆绠＄悊骞冲彴</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --primary:#4f46e5;--primary-light:#eef2ff;--primary-dark:#3730a3;
+  --success:#10b981;--success-light:#ecfdf5;
+  --warning:#f59e0b;--warning-light:#fffbeb;
+  --danger:#ef4444;--danger-light:#fef2f2;
+  --info:#3b82f6;--info-light:#eff6ff;
+  --bg:#f8fafc;--surface:#ffffff;--border:#e2e8f0;
+  --text:#0f172a;--text-muted:#64748b;--text-light:#94a3b8;
+  --sidebar-w:260px;--radius:12px;
+}
+body{font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;background:var(--bg);color:var(--text);font-size:14px;display:flex;height:100vh;overflow:hidden}
+
+/* Sidebar */
+.sidebar{width:var(--sidebar-w);background:linear-gradient(180deg,#1e1b4b 0%,#312e81 100%);display:flex;flex-direction:column;flex-shrink:0;color:#fff}
+.logo{padding:20px 20px 16px;border-bottom:1px solid rgba(255,255,255,0.1);display:flex;align-items:center;gap:12px}
+.logo-icon{width:36px;height:36px;background:rgba(255,255,255,0.15);border-radius:10px;display:flex;align-items:center;justify-content:center}
+.logo-icon svg{width:18px;height:18px;fill:#fff}
+.logo-text{font-size:15px;font-weight:700;letter-spacing:0.5px}
+.logo-sub{font-size:11px;color:rgba(255,255,255,0.5)}
+nav{flex:1;padding:12px 0;overflow-y:auto}
+.nav-section{padding:8px 20px 4px;font-size:10px;color:rgba(255,255,255,0.4);text-transform:uppercase;letter-spacing:1px}
+.nav-item{display:flex;align-items:center;gap:10px;padding:10px 20px;cursor:pointer;color:rgba(255,255,255,0.7);font-size:13px;transition:all 0.2s;margin:2px 8px;border-radius:8px}
+.nav-item:hover{background:rgba(255,255,255,0.1);color:#fff}
+.nav-item.active{background:rgba(255,255,255,0.15);color:#fff;font-weight:500}
+.nav-item svg{width:16px;height:16px;flex-shrink:0;opacity:0.8}
+.nav-item.active svg{opacity:1}
+
+/* Mode Switch in sidebar */
+.mode-switch{padding:12px 20px;margin:8px 12px;background:rgba(255,255,255,0.08);border-radius:10px;border:1px solid rgba(255,255,255,0.1)}
+.mode-switch-label{font-size:10px;color:rgba(255,255,255,0.5);margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px}
+.mode-toggle{display:flex;background:rgba(0,0,0,0.25);border-radius:8px;padding:3px;position:relative}
+.mode-toggle-btn{flex:1;padding:7px 0;text-align:center;font-size:11px;font-weight:600;border-radius:6px;cursor:pointer;z-index:1;transition:color 0.25s;color:rgba(255,255,255,0.5);user-select:none}
+.mode-toggle-btn.active{color:#fff}
+.mode-toggle-slider{position:absolute;top:3px;height:calc(100% - 6px);border-radius:6px;background:var(--primary);transition:left 0.25s ease,width 0.25s ease;width:50%;left:3px}
+
+.sidebar-footer{padding:16px 20px;border-top:1px solid rgba(255,255,255,0.1);font-size:11px;color:rgba(255,255,255,0.45)}
+
+/* Main */
+.main{flex:1;display:flex;flex-direction:column;overflow:hidden}
+.topbar{height:60px;background:var(--surface);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 28px;gap:16px;flex-shrink:0;box-shadow:0 1px 3px rgba(0,0,0,0.04)}
+.topbar-title{font-size:18px;font-weight:700;flex:1;background:linear-gradient(135deg,var(--primary),#7c3aed);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.topbar-btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:8px;border:1px solid var(--border);background:var(--surface);color:var(--text);cursor:pointer;font-size:13px;transition:all 0.15s;font-family:inherit}
+.topbar-btn:hover{background:var(--bg);border-color:#cbd5e1}
+.topbar-btn.primary{background:var(--primary);color:#fff;border-color:var(--primary)}
+.topbar-btn.primary:hover{background:var(--primary-dark)}
+.topbar-btn svg{width:14px;height:14px}
+
+/* Mode indicator badge */
+.mock-badge{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600;background:#fef3c7;color:#92400e}
+.mock-badge .dot{width:6px;height:6px;border-radius:50%;background:#f59e0b;animation:pulse 2s infinite}
+.real-badge{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600;background:#d1fae5;color:#065f46}
+.real-badge .dot{width:6px;height:6px;border-radius:50%;background:#10b981}
+
+.content{flex:1;overflow-y:auto;padding:28px}
+
+/* Pages */
+.page{display:none}.page.active{display:block}
+
+/* Stats */
+.stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:20px;margin-bottom:28px}
+.stat-card{background:var(--surface);border-radius:var(--radius);padding:20px 24px;border:1px solid var(--border);position:relative;overflow:hidden;transition:all 0.2s}
+.stat-card:hover{box-shadow:0 4px 12px rgba(0,0,0,0.06);transform:translateY(-2px)}
+.stat-card::after{content:'';position:absolute;top:0;right:0;width:80px;height:80px;background:var(--icon-bg);border-radius:50%;transform:translate(20px,-20px);opacity:0.08}
+.stat-icon{width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;margin-bottom:12px}
+.stat-icon svg{width:20px;height:20px}
+.stat-label{font-size:12px;color:var(--text-muted);margin-bottom:4px;font-weight:500}
+.stat-value{font-size:32px;font-weight:700;line-height:1}
+
+/* Upload Area */
+.upload-area{background:var(--surface);border-radius:var(--radius);border:1px solid var(--border);padding:32px;margin-bottom:28px}
+.section-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px}
+.section-title{font-size:16px;font-weight:600;display:flex;align-items:center;gap:8px}
+.section-title svg{width:18px;height:18px;color:var(--primary)}
+
+/* Tabs */
+.type-tabs{display:flex;gap:8px;margin-bottom:24px;flex-wrap:wrap}
+.type-tab{padding:10px 20px;border-radius:10px;cursor:pointer;font-size:13px;font-weight:500;transition:all 0.2s;border:2px solid transparent;background:var(--bg);color:var(--text-muted)}
+.type-tab:hover{background:var(--primary-light);color:var(--primary)}
+.type-tab.active{background:var(--primary);color:#fff;border-color:var(--primary)}
+.type-tab .tab-desc{font-size:11px;font-weight:400;opacity:0.7;margin-top:2px}
+
+/* Drop Zone */
+.drop-zone{border:2px dashed var(--border);border-radius:12px;padding:48px 24px;text-align:center;cursor:pointer;transition:all 0.3s;position:relative;background:var(--bg)}
+.drop-zone:hover,.drop-zone.drag-over{border-color:var(--primary);background:var(--primary-light)}
+.drop-zone-icon{width:56px;height:56px;margin:0 auto 16px;background:var(--primary);border-radius:14px;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 12px rgba(79,70,229,0.3)}
+.drop-zone-icon svg{width:28px;height:28px;fill:#fff}
+.drop-zone-text{font-size:15px;font-weight:500;margin-bottom:6px;color:var(--text)}
+.drop-zone-hint{font-size:12px;color:var(--text-muted)}
+#fileInput{display:none}
+
+/* Preview Grid */
+.preview-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:12px;margin-top:20px}
+.preview-card{background:var(--bg);border-radius:10px;overflow:hidden;border:1px solid var(--border);transition:all 0.2s}
+.preview-card:hover{border-color:var(--primary);box-shadow:0 4px 12px rgba(79,70,229,0.1)}
+.preview-thumb{aspect-ratio:1;overflow:hidden;position:relative}
+.preview-thumb img{width:100%;height:100%;object-fit:cover}
+.preview-thumb .status-badge{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:500;backdrop-filter:blur(4px)}
+.preview-info{padding:8px 10px}
+.preview-name{font-size:11px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.preview-meta{font-size:10px;color:var(--text-muted);margin-top:2px}
+
+/* Result Card */
+.result-card{background:var(--surface);border-radius:var(--radius);border:1px solid var(--border);margin-bottom:16px;overflow:hidden;transition:all 0.2s;animation:fadeInUp 0.35s ease}
+@keyframes fadeInUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+.result-card:hover{box-shadow:0 4px 16px rgba(0,0,0,0.06)}
+.result-header{display:flex;align-items:center;gap:16px;padding:16px 20px;border-bottom:1px solid var(--border)}
+.result-thumb{width:64px;height:48px;border-radius:8px;object-fit:cover;flex-shrink:0}
+.result-info{flex:1;min-width:0}
+.result-name{font-size:14px;font-weight:500;margin-bottom:2px}
+.result-time{font-size:12px;color:var(--text-muted)}
+.result-type-badge{font-size:11px;padding:4px 10px;border-radius:20px;background:var(--primary-light);color:var(--primary);font-weight:500}
+.result-body{padding:20px}
+.result-items{display:flex;flex-direction:column;gap:8px}
+.result-item{display:flex;align-items:center;gap:12px;padding:8px 12px;background:var(--bg);border-radius:8px;transition:all 0.15s}
+.result-item:hover{background:var(--primary-light)}
+.result-item-name{flex:1;font-size:13px;font-weight:500}
+.result-item-bar{flex:0 0 120px;height:6px;background:#e2e8f0;border-radius:3px;overflow:hidden}
+.result-item-bar-fill{height:100%;border-radius:3px;transition:width 0.6s ease}
+.result-item-score{font-size:12px;color:var(--text-muted);width:48px;text-align:right;font-weight:600}
+
+/* Tag Cloud */
+.tag-cloud{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+.tag-cloud span{padding:5px 14px;border-radius:20px;font-size:12px;font-weight:500;white-space:nowrap;cursor:default;transition:transform 0.15s}
+.tag-cloud span:hover{transform:scale(1.05)}
+
+/* Table */
+.data-table{width:100%;border-collapse:collapse;background:var(--surface);border-radius:var(--radius);overflow:hidden;border:1px solid var(--border)}
+.data-table th{background:var(--bg);padding:12px 16px;text-align:left;font-size:12px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px}
+.data-table td{padding:12px 16px;border-top:1px solid var(--border);font-size:13px}
+.data-table tr:hover td{background:var(--bg)}
+.badge{display:inline-block;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:500}
+.badge-success{background:var(--success-light);color:var(--success)}
+.badge-error{background:var(--danger-light);color:var(--danger)}
+.badge-info{background:var(--info-light);color:var(--info)}
+.badge-warning{background:var(--warning-light);color:var(--warning)}
+
+/* Modal */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(15,23,42,0.6);backdrop-filter:blur(4px);z-index:1000;align-items:center;justify-content:center}
+.modal-overlay.show{display:flex}
+.modal{background:var(--surface);border-radius:16px;width:900px;max-width:95vw;max-height:90vh;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 20px 60px rgba(0,0,0,0.2)}
+.modal-header{padding:20px 24px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.modal-title{font-size:17px;font-weight:600}
+.modal-close{width:32px;height:32px;border:none;background:var(--bg);border-radius:8px;cursor:pointer;font-size:18px;color:var(--text-muted);display:flex;align-items:center;justify-content:center;transition:all 0.15s}
+.modal-close:hover{background:var(--danger-light);color:var(--danger)}
+.modal-body{flex:1;overflow-y:auto;padding:24px;display:grid;grid-template-columns:1fr 1fr;gap:24px}
+.modal-img-wrap{border-radius:12px;overflow:hidden;background:var(--bg);aspect-ratio:4/3;display:flex;align-items:center;justify-content:center}
+
+/* Toast */
+.toast-container{position:fixed;top:20px;right:20px;z-index:9999;display:flex;flex-direction:column;gap:8px}
+.toast{background:var(--surface);border-radius:10px;padding:14px 18px;box-shadow:0 8px 24px rgba(0,0,0,0.12);border-left:4px solid var(--primary);font-size:13px;min-width:280px;animation:slideIn 0.3s ease;display:flex;align-items:center;gap:10px}
+.toast.success{border-left-color:var(--success)}.toast.error{border-left-color:var(--danger)}.toast.warning{border-left-color:var(--warning)}
+@keyframes slideIn{from{transform:translateX(100%);opacity:0}to{transform:translateX(0);opacity:1}}
+
+/* Scrollbar */
+::-webkit-scrollbar{width:5px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+
+/* Responsive */
+@media(max-width:900px){.stats-grid{grid-template-columns:repeat(2,1fr)}.sidebar{display:none}.modal-body{grid-template-columns:1fr}}
+
+/* Spinner */
+.spinner{width:20px;height:20px;border:2px solid var(--border);border-top-color:var(--primary);border-radius:50%;animation:spin 0.8s linear infinite;display:inline-block}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* Empty State */
+.empty-state{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:60px 24px;color:var(--text-muted);text-align:center}
+.empty-state svg{width:48px;height:48px;margin-bottom:16px;opacity:0.3}
+
+/* Mock Notice */
+.mock-notice{display:flex;align-items:center;gap:8px;padding:10px 16px;background:#fffbeb;border:1px solid #fcd34d;border-radius:10px;margin-bottom:20px;font-size:13px;color:#92400e}
+.mock-notice svg{width:18px;height:18px;flex-shrink:0;color:#f59e0b}
+
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.4}}
+</style>
+</head>
+<body>
+
+<!-- Sidebar -->
+<aside class="sidebar">
+  <div class="logo">
+    <div class="logo-icon"><svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 14.5v-9l6 4.5-6 4.5z"/></svg></div>
+    <div><div class="logo-text">AI璇嗗埆骞冲彴</div><div class="logo-sub">鐧惧害AI椹卞姩</div></div>
+  </div>
+  <nav>
+    <div class="nav-section">涓诲姛鑳?/div>
+    <div class="nav-item active" onclick="showPage('dashboard',this)"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/></svg>鏁版嵁姒傝</div>
+    <div class="nav-item" onclick="showPage('recognize',this)"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M19 7v2.99s-1.99.01-2 0V7h-3s.01-1.99 0-2h3V2h2v3h3v2h-3zm-3 4V8h-3V5H5c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2v-8h-3zM5 19l3-4 2 3 3-4 4 5H5z"/></svg>AI鍥剧墖璇嗗埆</div>
+    <div class="nav-item" onclick="showPage('records',this)"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/>璇嗗埆璁板綍<span class="badge badge-info" id="recordCount" style="margin-left:auto;font-size:10px">0</span></div>
+    <div class="nav-section">宸ュ叿</div>
+    <div class="nav-item" onclick="showPage('batch',this)"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M4 6H2v14c0 1.1.9 2 2 2h14v-2H4V6zm16-4H8c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H8V4h12v12z"/></svg>鎵归噺澶勭悊</div>
+    
+    <!-- Mode Switch -->
+    <div class="mode-switch">
+      <div class="mode-switch-label">API 妯″紡</div>
+      <div class="mode-toggle" id="modeToggle">
+        <div class="mode-toggle-slider" id="modeSlider"></div>
+        <div class="mode-toggle-btn active" data-mode="mock" onclick="switchMode('mock')">Mock妯℃嫙</div>
+        <div class="mode-toggle-btn" data-mode="real" onclick="switchMode('real')">鐪熷疄API</div>
+      </div>
+    </div>
+  </nav>
+  <div class="sidebar-footer">
+    <div style="display:flex;align-items:center;gap:8px" id="apiStatusIndicator">
+      <div class="dot" style="width:8px;height:8px;border-radius:50%;background:var(--warning);animation:pulse 2s infinite"></div>
+      <span id="apiStatusText">Mock 妯″紡</span>
+    </div>
+  </div>
+</aside>
+
+<!-- Main -->
+<main class="main">
+  <div class="topbar">
+    <div class="topbar-title" id="pageTitle">鏁版嵁姒傝</div>
+    <div style="display:flex;align-items:center;gap:12px">
+      <div id="topModeBadge" class="mock-badge"><div class="dot"></div>Mock 妯″紡</div>
+      <button class="topbar-btn primary" onclick="showPage('recognize',document.querySelector('[onclick*=recognize]'))"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M19 7v2.99s-1.99.01-2 0V7h-3s.01-1.99 0-2h3V2h2v3h3v2h-3zm-3 4V8h-3V5H5c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2v-8h-3z"/></svg>寮€濮嬭瘑鍒?/button>
+    </div>
+  </div>
+
+  <div class="content">
+
+    <!-- Dashboard -->
+    <div class="page active" id="page-dashboard">
+      <div class="stats-grid">
+        <div class="stat-card"><div class="stat-icon" style="background:var(--primary-light)"><svg viewBox="0 0 24 24" fill="var(--primary)"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/></svg></div><div class="stat-label">鎬昏瘑鍒鏁?/div><div class="stat-value" id="stat-total" style="color:var(--primary)">0</div></div>
+        <div class="stat-card"><div class="stat-icon" style="background:var(--success-light)"><svg viewBox="0 0 24 24" fill="var(--success)"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/></svg></div><div class="stat-label">浠婃棩璇嗗埆</div><div class="stat-value" id="stat-today" style="color:var(--success)">0</div></div>
+        <div class="stat-card"><div class="stat-icon" style="background:var(--info-light)"><svg viewBox="0 0 24 24" fill="var(--info)"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg></div><div class="stat-label">璇嗗埆鎴愬姛鐜?/div><div class="stat-value" id="stat-rate" style="color:var(--info)">鈥?/div></div>
+        <div class="stat-card"><div class="stat-icon" style="background:var(--warning-light)"><svg viewBox="0 0 24 24" fill="var(--warning)"><path d="M21 3H3C1.9 3 1 3.9 1 5v14c0 1.1.9 2 2 2h18c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zM9 17H7v-7h2v7zm4 0h-2V7h2v10zm4 0h-2v-4h2v4z"/></svg></div><div class="stat-label">璇嗗埆绫诲瀷</div><div class="stat-value" id="stat-types" style="color:var(--warning)">0</div></div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+        <div class="upload-area">
+          <div class="section-header"><div class="section-title"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 4V1L8 5l4 4V6c3.31 0 6 2.69 6 6 0 1.01-.25 1.97-.7 2.8l1.46 1.46C19.54 15.03 20 13.57 20 12c0-4.42-3.58-8-8-8zm0 14c-3.31 0-6-2.69-6-6 0-1.01.25-1.97.7-2.8L5.24 7.74C4.46 8.97 4 10.43 4 12c0 4.42 3.58 8 8 8v3l4-4-4-4v3z"/></svg>蹇€熻瘑鍒?/div></div>
+          <div class="drop-zone" id="dashDropZone" onclick="document.getElementById('dashFileInput').click()" ondragover="e=>e.preventDefault()" ondrop="handleDashDrop(event)">
+            <div class="drop-zone-icon"><svg viewBox="0 0 24 24"><path d="M9 16h6v-6h4l-7-7-7 7h4zm-4 2h14v2H5z"/></svg></div>
+            <div class="drop-zone-text">鎷栧叆鍥剧墖鎴栫偣鍑讳笂浼?/div>
+            <div class="drop-zone-hint">鏀寔 JPG/PNG/WEBP锛岃嚜鍔ㄨ瘑鍒?/div>
+            <input type="file" id="dashFileInput" accept="image/*" onchange="handleDashFile(event)" style="display:none">
+          </div>
+          <div id="dashPreview"></div>
+          <div id="dashResultArea"></div>
+        </div>
+        <div class="upload-area">
+          <div class="section-header"><div class="section-title"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 14.5v-9l6 4.5-6 4.5z"/></svg>鏈€杩戣褰?/div></div>
+          <div id="dashRecent"><div class="empty-state" style="padding:40px"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/></svg><p>鏆傛棤璇嗗埆璁板綍</p></div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Recognize -->
+    <div class="page" id="page-recognize">
+      <div id="recognizeNotice"></div>
+      <div class="upload-area">
+        <div class="section-header"><div class="section-title"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M19 7v2.99s-1.99.01-2 0V7h-3s.01-1.99 0-2h3V2h2v3h3v2h-3zm-3 4V8h-3V5H5c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2v-8h-3z"/></svg>AI 鍥剧墖璇嗗埆</div></div>
+        
+        <div class="type-tabs">
+          <div class="type-tab active" data-type="general" onclick="switchType(this)">閫氱敤璇嗗埆<div class="tab-desc">璇嗗埆鍥剧墖涓殑鐗╀綋/鍦烘櫙</div></div>
+          <div class="type-tab" data-type="object" onclick="switchType(this)">涓讳綋妫€娴?div class="tab-desc">妫€娴嬪浘鐗囦富浣撲綅缃?/div></div>
+          <div class="type-tab" data-type="ocr" onclick="switchType(this)">鏂囧瓧璇嗗埆<div class="tab-desc">鎻愬彇鍥剧墖涓殑鏂囧瓧锛圤CR锛?/div></div>
+          <div class="type-tab" data-type="censor" onclick="switchType(this)">鍐呭瀹℃牳<div class="tab-desc">妫€娴嬭繚瑙勫唴瀹?/div></div>
+          <div class="type-tab" data-type="plate" onclick="switchType(this)">杞︾墝璇嗗埆<div class="tab-desc">璇嗗埆杞︾墝鍙风爜</div></div>
+        </div>
+
+        <div class="drop-zone" id="recDropZone" onclick="document.getElementById('recFileInput').click()" ondragover="handleDragOver(event,this)" ondragleave="handleDragLeave(this)" ondrop="handleRecDrop(event)">
+          <div class="drop-zone-icon"><svg viewBox="0 0 24 24"><path d="M9 16h6v-6h4l-7-7-7 7h4zm-4 2h14v2H5z"/></svg></div>
+          <div class="drop-zone-text">鎷栨嫿鍥剧墖鍒版澶勶紝鎴栫偣鍑婚€夋嫨</div>
+          <div class="drop-zone-hint">鏀寔 JPG銆丳NG銆乄EBP 鏍煎紡锛屽崟寮犳渶澶?4MB</div>
+          <input type="file" id="recFileInput" accept="image/*" multiple onchange="handleRecFile(event)" style="display:none">
+        </div>
+        <div class="preview-grid" id="recPreview"></div>
+      </div>
+      <div id="recResults"></div>
+    </div>
+
+    <!-- Records -->
+    <div class="page" id="page-records">
+      <div class="upload-area">
+        <div class="section-header">
+          <div class="section-title"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/></svg>璇嗗埆璁板綍</div>
+          <div style="display:flex;gap:8px">
+            <button class="topbar-btn" onclick="loadRecords()" style="font-size:12px;padding:6px 12px"><svg viewBox="0 0 24 24" fill="currentColor" width="12" height="12"><path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg>鍒锋柊</button>
+            <button class="topbar-btn" style="font-size:12px;padding:6px 12px;color:var(--danger);border-color:var(--danger)" onclick="clearRecords()"><svg viewBox="0 0 24 24" fill="currentColor" width="12" height="12"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>娓呯┖</button>
+          </div>
+        </div>
+        <div id="recordsList"><div class="empty-state"><p>鍔犺浇涓?..</p></div></div>
+        <div id="recordsPager" style="display:flex;justify-content:center;gap:8px;margin-top:20px"></div>
+      </div>
+    </div>
+
+    <!-- Batch -->
+    <div class="page" id="page-batch">
+      <div class="upload-area">
+        <div class="section-header"><div class="section-title"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M4 6H2v14c0 1.1.9 2 2 2h14v-2H4V6zm16-4H8c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H8V4h12v12z"/></svg>鎵归噺澶勭悊</div></div>
+        <p style="color:var(--text-muted);margin-bottom:20px">鎵归噺涓婁紶澶氬紶鍥剧墖锛岀郴缁熷皢鑷姩渚濇璋冪敤 AI 璇嗗埆骞舵眹鎬荤粨鏋溿€?/p>
+        <div class="drop-zone" onclick="document.getElementById('batchFileInput').click()" ondragover="handleDragOver(event,this)" ondragleave="handleDragLeave(this)" ondrop="handleBatchDrop(event)">
+          <div class="drop-zone-icon"><svg viewBox="0 0 24 24"><path d="M4 6H2v14c0 1.1.9 2 2 2h14v-2H4V6zm16-4H8c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H8V4h12v12z"/></svg></div>
+          <div class="drop-zone-text">鎷栧叆澶氬紶鍥剧墖鎴栫偣鍑婚€夋嫨</div>
+          <div class="drop-zone-hint">鏀寔鎵归噺涓婁紶锛岃嚜鍔ㄨ瘑鍒苟鐢熸垚姹囨€绘姤鍛?/div>
+          <input type="file" id="batchFileInput" accept="image/*" multiple onchange="handleBatchFile(event)" style="display:none">
+        </div>
+        <div id="batchProgress" style="display:none;margin-top:20px">
+          <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px"><div class="spinner"></div><span id="batchStatus">澶勭悊涓?..</span></div>
+          <div style="height:6px;background:var(--bg);border-radius:3px;overflow:hidden"><div id="batchProgressBar" style="height:100%;background:var(--primary);border-radius:3px;width:0%;transition:width 0.3s"></div></div>
+        </div>
+        <div id="batchResults" style="margin-top:20px"></div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<!-- Detail Modal -->
+<div class="modal-overlay" id="detailModal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title" id="modalTitle">璇嗗埆璇︽儏</div>
+      <button class="modal-close" onclick="closeModal()">鉁?/button>
+    </div>
+    <div class="modal-body" id="modalBody"></div>
+  </div>
+</div>
+
+<div class="toast-container" id="toastContainer"></div>
+
+<script>
+// ==================== State ====================
+let currentType = 'general';
+let currentPage = 1;
+let isMockMode = true;
+
+// ==================== Init ====================
+document.addEventListener('DOMContentLoaded', async () => {
+  // 鑾峰彇褰撳墠妯″紡
+  try {
+    const m = await apiGet('/api/mode');
+    isMockMode = m.mockMode !== false;
+    updateModeUI();
+  } catch(e) {}
+  loadStats();
+  loadDashRecent();
+});
+
+// ==================== Mode Switch ====================
+function switchMode(mode) {
+  const newMock = mode === 'mock';
+  if (newMock === isMockMode) return;
+  
+  if (mode === 'real') {
+    // 鍒囨崲鍒扮湡瀹濧PI鍓嶆彁绀?    if (!confirm('鍒囨崲鍒扮湡瀹濧PI妯″紡闇€瑕侊細\n\n1. 宸插湪鐧惧害AI鎺у埗鍙板紑閫氱浉搴旀潈闄怽n2. API Key宸叉纭厤缃甛n\n纭畾鍒囨崲鍚楋紵')) return;
+  }
+  
+  isMockMode = newMock;
+  apiPost('/api/mode', { mockMode: isMockMode }).then(() => {
+    updateModeUI();
+    showToast(isMockMode ? '宸插垏鎹负 Mock 妯℃嫙妯″紡' : '宸插垏鎹负鐪熷疄 API 妯″紡', 'success');
+  });
+}
+
+function updateModeUI() {
+  // Toggle buttons
+  document.querySelectorAll('.mode-toggle-btn').forEach(btn => {
+    btn.classList.toggle('active', (btn.dataset.mode === 'mock') === isMockMode);
+  });
+  
+  // Slider position
+  const slider = document.getElementById('modeSlider');
+  slider.style.left = isMockMode ? '3px' : 'calc(50% + 3px)';
+  
+  // Top badge
+  const topBadge = document.getElementById('topModeBadge');
+  if (isMockMode) {
+    topBadge.className = 'mock-badge'; topBadge.innerHTML = '<div class="dot"></div>Mock 妯″紡';
+  } else {
+    topBadge.className = 'real-badge'; topBadge.innerHTML = '<div class="dot"></div>鐪熷疄 API';
+  }
+  
+  // Sidebar status
+  const dot = document.querySelector('#apiStatusIndicator .dot');
+  const text = document.getElementById('apiStatusText');
+  if (isMockMode) {
+    dot.style.background = 'var(--warning)'; text.textContent = 'Mock 妯″紡';
+  } else {
+    dot.style.background = 'var(--success)'; text.textContent = '鐪熷疄 API';
+  }
+  
+  // Notice area
+  const notice = document.getElementById('recognizeNotice');
+  if (isMockMode) {
+    notice.innerHTML = `<div class="mock-notice"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z"/></svg>褰撳墠涓?<strong>Mock 妯℃嫙妯″紡</strong>锛岃繑鍥炵殑璇嗗埆缁撴灉涓烘紨绀烘暟鎹€傚闇€浣跨敤鐪熷疄鐧惧害AI璇嗗埆锛岃鍦ㄥ乏渚у垏鎹负銆岀湡瀹濧PI銆嶆ā寮忥紙闇€鍏堝湪<a href="https://console.bce.baidu.com/qianjin/aimarket/home" target="_blank" style="color:var(--primary);font-weight:600">鐧惧害AI鎺у埗鍙?/a>寮€閫氭潈闄愶級銆?/div>`;
+  } else {
+    notice.innerHTML = `<div style="display:flex;align-items:center;gap:8px;padding:10px 16px;background:#d1fae5;border:1px solid #6ee7b7;border-radius:10px;margin-bottom:20px;font-size:13px;color:#065f46"><svg viewBox="0 0 24 24" fill="#059669" width="18" height="18"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>褰撳墠涓?<strong>鐪熷疄 API 妯″紡</strong>锛屽皢璋冪敤鐧惧害AI杩涜瀹為檯鍥惧儚鍒嗘瀽銆?/div>`;
+  }
+}
+
+// ==================== Navigation ====================
+const pageTitles = { dashboard:'鏁版嵁姒傝', recognize:'AI鍥剧墖璇嗗埆', records:'璇嗗埆璁板綍', batch:'鎵归噺澶勭悊' };
+function showPage(name, el) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('page-' + name).classList.add('active');
+  if (el) el.classList.add('active');
+  document.getElementById('pageTitle').textContent = pageTitles[name] || name;
+  if (name === 'recognize') updateModeUI();
+  if (name === 'records') loadRecords();
+  if (name === 'dashboard') { loadStats(); loadDashRecent(); }
+}
+
+// ==================== Type Switch ====================
+function switchType(el) {
+  document.querySelectorAll('.type-tab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  currentType = el.dataset.type;
+}
+
+// ==================== File Handling ====================
+function handleDragOver(e, zone) { e.preventDefault(); zone.classList.add('drag-over'); }
+function handleDragLeave(zone) { zone.classList.remove('drag-over'); }
+
+function handleRecDrop(e) {
+  e.preventDefault(); e.currentTarget.classList.remove('drag-over');
+  const files = Array.from(e.dataTransfer.files).filter(f => f.type.startsWith('image/'));
+  if (files.length) processRecFiles(files);
+}
+function handleRecFile(e) { processRecFiles(Array.from(e.target.files)); e.target.value = ''; }
+
+function handleDashDrop(e) {
+  e.preventDefault();
+  const file = Array.from(e.dataTransfer.files).find(f => f.type.startsWith('image/'));
+  if (file) processDashFile(file);
+}
+function handleDashFile(e) {
+  const file = e.target.files[0];
+  if (file) processDashFile(file);
+}
+
+async function processRecFiles(files) {
+  const preview = document.getElementById('recPreview'); preview.innerHTML = '';
+  for (const file of files) {
+    const card = await createPreviewCard(file);
+    preview.appendChild(card);
+    recognizeAndShow(file, card);
+  }
+}
+
+async function processDashFile(file) {
+  const preview = document.getElementById('dashPreview'); preview.innerHTML = '';
+  document.getElementById('dashResultArea').innerHTML = '';
+  const card = await createPreviewCard(file, true);
+  preview.appendChild(card);
+  recognizeAndShow(file, card, true);
+}
+
+function createPreviewCard(file, small) {
+  return new Promise(resolve => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const card = document.createElement('div');
+      card.className = 'preview-card';
+      card.dataset.base64 = e.target.result.split(',')[1];
+      card.dataset.src = e.target.result;
+      card.dataset.name = file.name;
+      card.innerHTML = `
+        <div class="preview-thumb">
+          <img src="${e.target.result}" alt="${escHtml(file.name)}">
+          <div class="status-badge" style="background:rgba(79,70,229,0.85);color:#fff">
+            <div class="spinner" style="width:16px;height:16px;border-width:2px;border-color:rgba(255,255,255,0.3);border-top-color:#fff"></div>
+            <span style="margin-left:6px">璇嗗埆涓?/span>
+          </div>
+        </div>
+        <div class="preview-info">
+          <div class="preview-name" title="${escHtml(file.name)}">${escHtml(file.name)}</div>
+          <div class="preview-meta">${formatSize(file.size)}</div>
+        </div>
+      `;
+      resolve(card);
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+let lastRecognizedSrc = '';
+
+async function recognizeAndShow(file, card, isDash) {
+  const base64 = card.dataset.base64;
+  try {
+    const data = await apiPost('/api/recognize', { base64, type: currentType });
+    if (data.success) {
+      const isMock = !!data.mock;
+      card.querySelector('.status-badge').innerHTML = `<span style="color:#fff">鉁?${isMock?'Mock':'璇嗗埆'}瀹屾垚</span>`;
+      card.querySelector('.status-badge').style.background = isMock ? 'rgba(245,158,11,0.85)' : 'rgba(16,185,129,0.85)';
+      
+      lastRecognizedSrc = card.dataset.src || '';
+      
+      if (isDash) {
+        showDashResult(data.result, file.name, currentType, isMock);
+        loadStats();
+        loadDashRecent();
+      }
+      showRecResult(data.result, file.name, currentType, isMock, card.dataset.src);
+    } else {
+      card.querySelector('.status-badge').innerHTML = '<span style="color:#fff">璇嗗埆澶辫触</span>';
+      card.querySelector('.status-badge').style.background = 'rgba(239,68,68,0.85)';
+      showToast(`璇嗗埆澶辫触锛?{data.error || '鏈煡閿欒'}`, 'error');
+    }
+  } catch(e) {
+    card.querySelector('.status-badge').innerHTML = `<span style="color:#fff">閿欒: ${escHtml(e.message)}</span>`;
+    card.querySelector('.status-badge').style.background = 'rgba(239,68,68,0.85)';
+  }
+}
+
+function showDashResult(result, name, type, isMock) {
+  const container = document.getElementById('dashResultArea');
+  const items = buildResultItems(result, type);
+  container.innerHTML = `
+    <div class="result-card" style="animation:fadeInUp 0.35s ease">
+      <div class="result-body">
+        ${items}
+        ${isMock ? '<div style="margin-top:12px;font-size:11px;color:var(--text-muted);display:flex;align-items:center;gap:4px"><span style="background:#fef3c7;color:#92400e;padding:2px 8px;border-radius:10px;font-weight:600">鈿?Mock 鏁版嵁</span> 褰撳墠涓烘ā鎷熸ā寮忥紝缁撴灉浠呬緵鍙傝€冨睍绀?/div>' : ''}
+      </div>
+    </div>
+  `;
+}
+
+function showRecResult(result, name, type, isMock, imgSrc) {
+  const container = document.getElementById('recResults');
+  const items = buildResultItems(result, type);
+  const colors = ['#4f46e5','#10b981','#f59e0b','#3b82f6','#ec4899','#8b5cf6'];
+  
+  let mockTag = '';
+  if (isMock) {
+    mockTag = '<span style="background:#fef3c7;color:#92400e;padding:2px 8px;border-radius:10px;font-size:10px;font-weight:600;margin-left:8px">鈿?Mock</span>';
+  }
+
+  const card = document.createElement('div');
+  card.className = 'result-card';
+  card.innerHTML = `
+    <div class="result-header">
+      ${imgSrc ? `<img src="${imgSrc}" class="result-thumb" onerror="this.style.display='none'">` : ''}
+      <div class="result-info">
+        <div class="result-name">${escHtml(name)}</div>
+        <div class="result-time">${new Date().toLocaleString('zh-CN')} 路 绫诲瀷: ${typeLabels[type]||type}</div>
+      </div>
+      <span class="result-type-badge">${typeLabels[type]||type}${mockTag}</span>
+    </div>
+    <div class="result-body">
+      ${items || '<div style="color:var(--text-muted);padding:20px;text-align:center">鏃犺瘑鍒粨鏋滄垨缁撴灉鏍煎紡寮傚父</div>'}
+    </div>
+  `;
+  container.prepend(card);
+}
+
+function buildResultItems(result, type) {
+  const colors = ['#4f46e5','#10b981','#f59e0b','#3b82f6','#ec4899','#8b5cf6','#06b6d4','#84cc16','#f43f5e','#a78bfa'];
+  
+  if (type === 'general' && result.result) {
+    // Progress bars + tag cloud
+    const barHtml = result.result.slice(0, 6).map((r, i) => `
+      <div class="result-item">
+        <span class="result-item-name">${escHtml(r.keyword || r.name || '?')}</span>
+        <div class="result-item-bar"><div class="result-item-bar-fill" style="width:${Math.round(r.score*100)}%;background:${colors[i%colors.length]}"></div></div>
+        <span class="result-item-score">${(r.score*100).toFixed(1)}%</span>
+      </div>
+    `).join('');
+    const tagsHtml = result.result.slice(0, 8).map((r, i) => {
+      const size = Math.max(11, Math.min(20, 11 + r.score * 10));
+      return `<span style="background:${colors[i%colors.length]}15;color:${colors[i%colors.length]};font-size:${size}px;padding:${3+Math.round(r.score*6)}px ${10+r.score*8}px">${escHtml(r.keyword || r.name || '?')}</span>`;
+    }).join('');
+    return `
+      <div class="result-items">${barHtml}</div>
+      <div class="tag-cloud" style="margin-top:16px;padding:16px;background:var(--bg);border-radius:10px">${tagsHtml}</div>
+    `;
+  }
+  
+  if (type === 'ocr' && result.words_result) {
+    const textContent = result.words_result.map(w => w.words).join('\n');
+    return `
+      <div style="background:#0f172a;color:#a8f0a8;padding:16px;border-radius:10px;font-family:'Courier New',monospace;font-size:13px;line-height:1.8;white-space:pre-wrap;word-break:break-all">${escHtml(textContent)}</div>
+      <div style="margin-top:10px;font-size:12px;color:var(--text-muted)">鍏辫瘑鍒嚭 ${result.words_result_num || result.words_result.length} 鏉℃枃鏈?/div>
+    `;
+  }
+  
+  if (type === 'object' && result.result) {
+    return `<div class="result-items">${result.result.map((r,i) => `
+      <div class="result-item">
+        <span class="result-item-name">馃摝 ${escHtml(r.name)} 鈥?缃俊搴?${(r.score*100).toFixed(0)}%</span>
+        <div class="result-item-bar"><div class="result-item-bar-fill" style="width:${Math.round(r.score*100)}%;background:${colors[2]}"></div></div>
+        <span class="result-item-score">浣嶇疆: (${r.location?.left||0},${r.location?.top||0})</span>
+      </div>
+    `).join('')}</div>`;
+  }
+  
+  if (type === 'censor') {
+    const scenes = result.result?.scenes || {};
+    const conclusion = result.conclusion || '鏈煡';
+    const cColor = conclusion.includes('鍚?) ? 'var(--success)' : 'var(--danger)';
+    return `
+      <div style="display:flex;align-items:center;gap:12px;padding:16px;background:var(--bg);border-radius:10px;margin-bottom:12px">
+        <div style="width:44px;height:44px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:20px;background:${conclusion.includes('鍚?)?'var(--success-light)':'var(--danger-light)'}">${conclusion.includes('鍚?)?'鉁?:'鉀?}</div>
+        <div><div style="font-size:16px;font-weight:600;color:${cColor}">${escHtml(conclusion)}</div><div style="font-size:12px;color:var(--text-muted)">${conclusion.includes('鍚堣')?'鍥剧墖鍐呭绗﹀悎瑙勮寖':'鍥剧墖鍙兘鍖呭惈杩濊鍐呭'}</div></div>
+      </div>
+      ${Object.entries(scenes).length > 0 ? `<div class="result-items">${Object.entries(scenes).map(([k,v]) => `
+        <div class="result-item"><span class="result-item-name">${escHtml(k)}</span><div class="result-item-bar"><div class="result-item-bar-fill" style="width:${Math.min(100, v * 10000)}%;background:${colors[Object.keys(scenes).indexOf(k)%colors.length]}"></div></div><span class="result-item-score">${(v*100).toFixed(2)}%</span></div>
+      `).join('')}</div>` : ''}
+    `;
+  }
+  
+  if (type === 'plate' && result.words_result) {
+    return `<div class="result-items">${result.words_result.map(w => `
+      <div class="result-item">
+        <span class="result-item-name" style="font-size:20px;font-weight:700;letter-spacing:4px">${escHtml(w.number)}</span>
+        <span class="result-item-score" style="width:auto">缃俊搴?${(w.probability?.[0]*100||0).toFixed(1)}%</span>
+      </div>
+    `).join('')}</div>`;
+  }
+  
+  if (result.error_code) {
+    return `<div class="result-item" style="color:var(--danger);background:var(--danger-light)">鉂?璇嗗埆澶辫触锛?{escHtml(result.error_msg || '鏈煡閿欒')}锛堥敊璇爜锛?{result.error_code}锛?/div>`;
+  }
+  
+  return `<div style="color:var(--text-muted);padding:12px;text-align:center">鍘熷缁撴灉锛?pre style="margin-top:8px;background:var(--bg);padding:12px;border-radius:8px;font-size:11px;overflow-x:auto">${escHtml(JSON.stringify(result, null, 2))}</pre></div>`;
+}
+
+const typeLabels = { general:'閫氱敤璇嗗埆', object:'涓讳綋妫€娴?, ocr:'鏂囧瓧璇嗗埆', censor:'鍐呭瀹℃牳', plate:'杞︾墝璇嗗埆' };
+
+// ==================== Records ====================
+function loadRecords(page) {
+  currentPage = page || 1;
+  apiGet(`/api/records?page=${currentPage}`).then(data => {
+    if (!data.success) { showToast('鍔犺浇澶辫触', 'error'); return; }
+    const container = document.getElementById('recordsList');
+    if (data.records.length === 0) { container.innerHTML = '<div class="empty-state"><p>鏆傛棤璇嗗埆璁板綍</p></div>'; return; }
+    container.innerHTML = `
+      <table class="data-table">
+        <thead><tr><th>鏃堕棿</th><th>绫诲瀷</th><th>鏉ユ簮</th><th>鐘舵€?/th><th>鎿嶄綔</th></tr></thead>
+        <tbody>
+          ${data.records.map(r => `
+            <tr>
+              <td>${formatDateTime(r.timestamp)}</td>
+              <td><span class="badge badge-info">${typeLabels[r.type]||r.type}</span></td>
+              <td>${r.mock ? '<span class="badge badge-warning">Mock</span>' : '<span class="badge badge-success">鐪熷疄API</span>'}</td>
+              <td><span class="badge ${r.success?'badge-success':'badge-error'}">${r.success?'鎴愬姛':'澶辫触'}</span></td>
+              <td>
+                <button class="topbar-btn" style="font-size:11px;padding:4px 10px" onclick="viewRecord('${r.id}')">鏌ョ湅</button>
+                <button class="topbar-btn" style="font-size:11px;padding:4px 10px;color:var(--danger)" onclick="deleteRecord('${r.id}')">鍒犻櫎</button>
+              </td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+    `;
+    const pager = document.getElementById('recordsPager');
+    const totalPages = Math.ceil(data.total / data.pageSize);
+    pager.innerHTML = Array.from({length: Math.min(totalPages, 5)}, (_,i) => i+1)
+      .map(p => `<button class="topbar-btn" style="padding:6px 12px;${p===currentPage?'background:var(--primary);color:#fff':''}" onclick="loadRecords(${p})">${p}</button>`).join('');
+  });
+}
+
+function viewRecord(id) {
+  apiGet('/api/records?page=1').then(data => {
+    const record = data.records.find(r => r.id === id);
+    if (!record) { showToast('璁板綍涓嶅瓨鍦?, 'error'); return; }
+    openDetailModal(record);
+  });
+}
+
+function deleteRecord(id) {
+  if (!confirm('纭畾鍒犻櫎璇ヨ褰曪紵')) return;
+  apiDelete(`/api/record?id=${id}`).then(() => { showToast('宸插垹闄?, 'success'); loadRecords(currentPage); loadStats(); });
+}
+
+function clearRecords() {
+  if (!confirm('纭畾娓呯┖鎵€鏈夎褰曪紵')) return;
+  apiDelete('/api/records').then(() => { showToast('宸叉竻绌?, 'success'); loadRecords(1); loadStats(); });
+}
+
+function loadDashRecent() {
+  apiGet('/api/records?page=1').then(data => {
+    const container = document.getElementById('dashRecent');
+    if (!data.success || data.records.length === 0) return;
+    container.innerHTML = data.records.slice(0, 5).map(r => `
+      <div style="display:flex;align-items:center;gap:12px;padding:10px;background:var(--bg);border-radius:8px;margin-bottom:8px;cursor:pointer;transition:all 0.15s" onmouseover="this.style.borderColor='var(--primary)'" onmouseout="this.style.borderColor='transparent'" onclick="viewRecord('${r.id}')" style="border:1px solid transparent">
+        <div style="width:40px;height:30px;background:#ddd;border-radius:6px;overflow:hidden;flex-shrink:0"></div>
+        <div style="flex:1;min-width:0">
+          <div style="font-size:12px;font-weight:500">${typeLabels[r.type]||r.type}${r.mock?' <span style="color:#92400e;font-size:10px">[Mock]</span>':''}</div>
+          <div style="font-size:11px;color:var(--text-muted)">${formatDateTime(r.timestamp)}</div>
+        </div>
+        <span class="badge ${r.success?'badge-success':'badge-error'}" style="font-size:10px">${r.success?'鎴愬姛':'澶辫触'}</span>
+      </div>
+    `).join('');
+  });
+}
+
+// ==================== Batch ====================
+function handleBatchDrop(e) {
+  e.preventDefault(); e.currentTarget.classList.remove('drag-over');
+  const files = Array.from(e.dataTransfer.files).filter(f => f.type.startsWith('image/'));
+  if (files.length) processBatch(files);
+}
+function handleBatchFile(e) { processBatch(Array.from(e.target.files)); e.target.value = ''; }
+
+async function processBatch(files) {
+  const progress = document.getElementById('batchProgress');
+  const bar = document.getElementById('batchProgressBar');
+  const status = document.getElementById('batchStatus');
+  const results = document.getElementById('batchResults');
+  progress.style.display = 'block'; results.innerHTML = '';
+  let completed = 0;
+  for (const file of files) {
+    completed++;
+    status.textContent = `澶勭悊涓?(${completed}/${files.length})...`;
+    bar.style.width = (completed/files.length*100)+'%';
+    const reader = new FileReader();
+    await new Promise(resolve => {
+      reader.onload = async (e) => {
+        try {
+          const data = await apiPost('/api/recognize', { base64: e.target.result.split(',')[1], type: currentType });
+          const div = document.createElement('div'); div.className = 'result-card';
+          div.innerHTML = `
+            <div class="result-header">
+              <div class="result-info"><div class="result-name">${escHtml(file.name)}</div></div>
+              <span class="result-type-badge">${typeLabels[currentType]||currentType}${data.mock?' 鈿ock':''}</span>
+            </div>
+            <div class="result-body" style="padding:12px;font-size:12px">
+              ${data.success ? `鉁?鎴愬姛 鈥?鍏?${((data.result&&data.result.result)||[]).length || '1'} 涓粨鏋渀 : `鉂?澶辫触 鈥?${data.error||''}`}
+            </div>
+          `;
+          results.appendChild(div);
+        } catch(err) { showToast(`${file.name} 澶勭悊澶辫触`, 'error'); }
+        resolve();
+      };
+      reader.readAsDataURL(file);
+    });
+  }
+  status.textContent = `瀹屾垚锛佸叡澶勭悊 ${files.length} 寮犲浘鐗嘸;
+  showToast(`鎵归噺澶勭悊瀹屾垚锛屽叡 ${files.length} 寮燻, 'success');
+  loadStats();
+}
+
+// ==================== Modal ====================
+function openDetailModal(record) {
+  document.getElementById('modalTitle').textContent = (typeLabels[record.type]||record.type) + ' - 璇︽儏' + (record.mock ? ' [Mock]' : '');
+  const body = document.getElementById('modalBody');
+  body.innerHTML = `
+    <div style="grid-column:1/-1;display:flex;flex-direction:column;gap:16px">
+      <div style="display:flex;gap:12px;align-items:center">
+        <span class="${record.mock?'badge-warning':'badge-success'}" style="font-size:12px">${record.mock?'Mock 妯℃嫙鏁版嵁':'鐪熷疄API 缁撴灉'}</span>
+        <span style="color:var(--text-muted);font-size:12px">${formatDateTime(record.timestamp)}</span>
+        <span class="badge ${record.success?'badge-success':'badge-error'}">${record.success?'鎴愬姛':'澶辫触'}</span>
+      </div>
+      <div style="background:#0f172a;color:#a8f0a8;padding:20px;border-radius:12px;font-family:'Courier New',monospace;font-size:12.5px;overflow:auto;max-height:55vh;white-space:pre-wrap;word-break:break-all;line-height:1.7">${escHtml(JSON.stringify(record.result, null, 2))}</div>
+    </div>
+  `;
+  document.getElementById('detailModal').classList.add('show');
+}
+function closeModal() { document.getElementById('detailModal').classList.remove('show'); }
+document.getElementById('detailModal').addEventListener('click', e => { if (e.target.id==='detailModal') closeModal(); });
+
+// ==================== API Helpers ====================
+async function apiGet(path) { const resp = await fetch(path); return await resp.json(); }
+async function apiPost(path, body) { const resp = await fetch(path, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body) }); return await resp.json(); }
+async function apiDelete(path) { const resp = await fetch(path, { method:'DELETE' }); return await resp.json(); }
+
+// ==================== Toast ====================
+function showToast(msg, type='info') {
+  const c = document.getElementById('toastContainer');
+  const t = document.createElement('div'); t.className=`toast ${type}`; t.textContent=msg; c.appendChild(t);
+  setTimeout(() => { t.style.opacity='0'; t.style.transition='opacity 0.3s'; setTimeout(()=>t.remove(),300); }, 3500);
+}
+
+// ==================== Helpers ====================
+function escHtml(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
+function formatSize(b){if(b<1024)return b+'B';if(b<1024*1024)return(b/1024).toFixed(1)+'KB';return(b/(1024*1024)).toFixed(2)+'MB'}
+function formatDateTime(iso){if(!iso)return'';const d=new Date(iso);return d.toLocaleString('zh-CN')}
+</script>
+</body>
+</html>
